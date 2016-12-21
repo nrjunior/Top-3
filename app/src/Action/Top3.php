@@ -42,10 +42,20 @@ final class Top3
                 {
 
                     $indice = rand(0, count($reader) - 1);
-                    $newXML[] = array(
+                    $newXML[$i] = array(
                         'title' => $reader[$indice]['title'],
-                        'itens' => $reader[$indice]['itens']
                     );
+
+                    for($j = 0; $j < count($reader[$indice]['itens']['item']); $j++)
+                    {
+                        $item = $reader[$indice]['itens']['item'][$j];
+                        $newXML[$i]['itens'][$j] = array(
+                            'title' => $item['title'],
+                            'description' => $item['description'],
+                            'image' => $this->getPathImages() . $item['image']
+                        );
+                    }
+
                     unset($reader[$indice]);
                     shuffle($reader);
                 };
@@ -53,39 +63,44 @@ final class Top3
                 FileSystemCache::store($key, $newXML,432000);
             }
 
-            $xmlMaker = new XMLBuilder('root');
-            $xmlMaker->load($newXML);
-            $xml_output = $xmlMaker->createXML(true);
-            $response->write($xml_output);
-            $response = $response->withHeader('content-type', 'text/xml');
-            return $response;
-
-
-           // print_r($newXML);
         }
+
         else
         {
-            echo "o arquivo não existe";
+            $newXML = array(
+                'status' => 'ERROR',
+                'message' => 'Arquivo nÃ£o encontrado'
+            );
         }
+
+        $xmlMaker = new XMLBuilder('root');
+        $xmlMaker->load($newXML);
+        $xml_output = $xmlMaker->createXML(true);
+        $response->write($xml_output);
+        $response = $response->withHeader('content-type', 'text/xml');
+
+        if(isset($newXML['status']))
+        {
+            if($newXML['status'] == 'ERROR')
+            {
+                $response = $response->withStatus(404);
+            }
+        }
+
+        return $response;
     }
 
-    /**
-     * @return mixed
-     */
     public function getFileXML()
     {
         return $this->fileXML;
     }
-
-    /**
-     * @param mixed $fileXML
-     * @return Top3
-     */
     public function setFileXML($fileXML)
     {
         $this->fileXML = $fileXML;
         return $this;
     }
-
-
+    public function getPathImages()
+    {
+        return 'http://' . $_SERVER['HTTP_HOST'] . '/data/uploads/images/';
+    }
 }
